@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <!-- Indicamos que utilizaremos caracteres especiales del español. -->
+    <meta charset="UTF-8">
+
+    <!-- Permitimos que la página se adapte correctamente a celulares y computadoras. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Título que aparecerá en la pestaña del navegador. -->
+    <title>Tarea 4: Clasificador de Vasos por Color</title>
+
+
+    <!-- ========================================================= -->
+    <!-- BOOTSTRAP -->
+    <!-- ========================================================= -->
+
+    <!-- Cargamos Bootstrap 5 desde su CDN. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+    <!-- Cargamos los iconos de Bootstrap. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+
+    <!-- ========================================================= -->
+    <!-- LIBRERÍAS DE INTELIGENCIA ARTIFICIAL -->
+    <!-- ========================================================= -->
+
+    <!-- Cargamos TensorFlow.js. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js">
+    </script>
+
+
+    <!-- Cargamos la biblioteca de Teachable Machine. -->
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js">
+    </script>
+
+
+    <!-- ========================================================= -->
+    <!-- ESTILOS PERSONALIZADOS -->
+    <!-- ========================================================= -->
+
+    <style>
+        /* Configuramos el fondo general de la página. */
+        body {
+
+            background: #f4f7fb;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+        }
+
+
+        /* Diseñamos el encabezado principal. */
+        .hero {
+
+            background: linear-gradient(135deg, #0d6efd, #6610f2);
+
+            color: white;
+
+            padding: 45px 20px;
+
+            border-radius: 0 0 30px 30px;
+
+        }
+
+
+        /* Damos una apariencia de tarjeta a los paneles. */
+        .card {
+
+            border: none;
+
+            border-radius: 18px;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+
+        }
+
+
+        /* Diseñamos el espacio donde aparecerá la cámara. */
+        #webcam-container {
+
+            min-height: 220px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            background: #eef2f7;
+
+            border-radius: 15px;
+
+            padding: 15px;
+
+            text-align: center;
+
+        }
+
+
+        /* Redondeamos la imagen de la cámara. */
+        #webcam-container canvas {
+
+            border-radius: 15px;
+
+            max-width: 100%;
+
+            height: auto;
+
+        }
+
+
+        /* Destacamos el resultado principal. */
+        #resultado-principal {
+
+            font-size: 1.8rem;
+
+            font-weight: bold;
+
+        }
+
+
+        /* Diseñamos las tarjetas de colores. */
+        .color-card {
+
+            border-radius: 15px;
+
+            padding: 18px;
+
+            color: white;
+
+            text-align: center;
+
+            font-weight: bold;
+
+            min-height: 120px;
+
+        }
+
+
+        /* Color para el vaso rosado. */
+        .rosa {
+
+            background: linear-gradient(135deg, #ff69b4, #e83e8c);
+
+        }
+
+
+        /* Color para el vaso verde. */
+        .verde {
+
+            background: linear-gradient(135deg, #198754, #20c997);
+
+        }
+
+
+        /* Color para el vaso amarillo. */
+        .amarillo {
+
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+
+        }
+
+
+        /* Color para el vaso azul. */
+        .azul {
+
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+
+        }
+
+
+        /* Diseñamos el pie de página. */
+        footer {
+
+            margin-top: 50px;
+
+            background: #212529;
+
+            color: white;
+
+            padding: 25px;
+
+        }
+
+
+        /* Texto pequeño utilizado para información secundaria. */
+        .texto-pequeno {
+
+            font-size: 0.9rem;
+
+            color: #6c757d;
+
+        }
+
+
+        /* Espacio entre los botones de la cámara. */
+        .botones-camara {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- ========================================================= -->
+    <!-- ENCABEZADO PRINCIPAL -->
+    <!-- ========================================================= -->
+
+    <header class="hero text-center">
+
+        <div class="container">
+
+            <!-- Icono principal. -->
+            <i class="bi bi-cup-straw display-4"></i>
+
+
+            <!-- Título principal. -->
+            <h1 class="fw-bold mt-3">
+
+                Clasificador de Vasos por Color
+
+            </h1>
+
+
+            <!-- Descripción principal. -->
+            <p class="lead mb-2">
+
+                Sistema de clasificación de imágenes mediante
+                Inteligencia Artificial
+
+            </p>
+
+
+            <!-- Nombre del estudiante. -->
+            <p class="mb-0">
+
+                <strong>
+                    Lic. Juan Carlos Alanoca Titirico
+                </strong>
+
+            </p>
+
+        </div>
+
+    </header>
+
+
+    <!-- ========================================================= -->
+    <!-- CONTENIDO PRINCIPAL -->
+    <!-- ========================================================= -->
+
+    <main class="container py-5">
+
+
+        <!-- ===================================================== -->
+        <!-- INFORMACIÓN DEL PROYECTO -->
+        <!-- ===================================================== -->
+
+        <div class="row g-4 mb-4">
+
+
+            <!-- Formación. -->
+            <div class="col-md-4">
+
+                <div class="card h-100 p-4 text-center">
+
+                    <i class="bi bi-mortarboard-fill text-primary fs-1"></i>
+
+
+                    <h5 class="mt-3">
+
+                        Programa de Maestría
+
+                    </h5>
+
+
+                    <p class="texto-pequeno mb-0">
+
+                        Maestría en Inteligencia Artificial,
+                        Machine Learning y Data Science
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Tecnología. -->
+            <div class="col-md-4">
+
+                <div class="card h-100 p-4 text-center">
+
+                    <i class="bi bi-cpu-fill text-success fs-1"></i>
+
+
+                    <h5 class="mt-3">
+
+                        Tecnología
+
+                    </h5>
+
+
+                    <p class="texto-pequeno mb-0">
+
+                        Modelo entrenado mediante
+                        Google Teachable Machine
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Clases. -->
+            <div class="col-md-4">
+
+                <div class="card h-100 p-4 text-center">
+
+                    <i class="bi bi-collection-fill text-warning fs-1"></i>
+
+
+                    <h5 class="mt-3">
+
+                        Clases
+
+                    </h5>
+
+
+                    <p class="texto-pequeno mb-0">
+
+                        4 clases de vasos según su color
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- ÁREA PRINCIPAL -->
+        <!-- ===================================================== -->
+
+        <div class="row g-4">
+
+
+            <!-- ================================================= -->
+            <!-- CÁMARA -->
+            <!-- ================================================= -->
+
+            <div class="col-lg-6">
+
+                <div class="card p-4 h-100">
+
+
+                    <h3 class="text-center mb-3">
+
+                        <i class="bi bi-camera-video-fill"></i>
+
+                        Cámara
+
+                    </h3>
+
+
+                    <p class="text-center texto-pequeno">
+
+                        Coloca un vaso frente a la cámara
+                        para identificar su color.
+
+                    </p>
+
+
+                    <!-- ================================================= -->
+                    <!-- ESPACIO DE LA CÁMARA -->
+                    <!-- ================================================= -->
+
+                    <div id="webcam-container">
+
+                        <div class="text-muted text-center">
+
+                            <i class="bi bi-camera-video fs-1"></i>
+
+                            <br>
+
+                            Presiona "Iniciar cámara"
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- BOTONES DE CONTROL -->
+                    <!-- ================================================= -->
+
+                    <div class="botones-camara mt-4">
+
+
+                        <!-- Botón para iniciar la cámara. -->
+                        <button type="button" class="btn btn-primary btn-lg px-4" onclick="init()" id="btn-iniciar">
+
+                            <i class="bi bi-camera-fill"></i>
+
+                            Iniciar cámara
+
+                        </button>
+
+
+                        <!-- Botón para detener la cámara. -->
+                        <button type="button" class="btn btn-danger btn-lg px-4" onclick="detenerCamara()"
+                            id="btn-detener" disabled>
+
+                            <i class="bi bi-camera-video-off-fill"></i>
+
+                            Detener cámara
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- ESTADO DE LA CÁMARA -->
+                    <!-- ================================================= -->
+
+                    <div id="estado" class="text-center mt-3 texto-pequeno">
+
+                        Cámara sin iniciar.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- RESULTADOS -->
+            <!-- ================================================= -->
+
+            <div class="col-lg-6">
+
+                <div class="card p-4 h-100">
+
+
+                    <h3 class="text-center mb-4">
+
+                        <i class="bi bi-bar-chart-fill"></i>
+
+                        Resultado de la clasificación
+
+                    </h3>
+
+
+                    <!-- Resultado principal. -->
+                    <div class="alert alert-primary text-center">
+
+
+                        <div class="texto-pequeno">
+
+                            COLOR IDENTIFICADO
+
+                        </div>
+
+
+                        <div id="resultado-principal">
+
+                            Esperando...
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Aquí aparecerán las probabilidades. -->
+                    <div id="label-container">
+
+                    </div>
+
+
+                    <!-- Información explicativa. -->
+                    <div class="alert alert-light mt-4">
+
+                        <i class="bi bi-info-circle-fill"></i>
+
+                        Los valores mostrados representan la
+                        probabilidad estimada para cada clase.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ===================================================== -->
+        <!-- CLASES DEL MODELO -->
+        <!-- ===================================================== -->
+
+        <section class="mt-5">
+
+
+            <h2 class="text-center fw-bold mb-4">
+
+                Clases utilizadas en el entrenamiento
+
+            </h2>
+
+
+            <div class="row g-4">
+
+
+                <!-- Vaso rosado. -->
+                <div class="col-sm-6 col-lg-3">
+
+                    <div class="color-card rosa">
+
+                        <i class="bi bi-cup-fill fs-1"></i>
+
+
+                        <h5 class="mt-2">
+
+                            Vaso Rosado
+
+                        </h5>
+
+
+                        <small>
+
+                            Clase 1
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Vaso verde. -->
+                <div class="col-sm-6 col-lg-3">
+
+                    <div class="color-card verde">
+
+                        <i class="bi bi-cup-fill fs-1"></i>
+
+
+                        <h5 class="mt-2">
+
+                            Vaso Verde
+
+                        </h5>
+
+
+                        <small>
+
+                            Clase 2
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Vaso amarillo. -->
+                <div class="col-sm-6 col-lg-3">
+
+                    <div class="color-card amarillo">
+
+                        <i class="bi bi-cup-fill fs-1"></i>
+
+
+                        <h5 class="mt-2">
+
+                            Vaso Amarillo
+
+                        </h5>
+
+
+                        <small>
+
+                            Clase 3
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Vaso azul. -->
+                <div class="col-sm-6 col-lg-3">
+
+                    <div class="color-card azul">
+
+                        <i class="bi bi-cup-fill fs-1"></i>
+
+
+                        <h5 class="mt-2">
+
+                            Vaso Azul
+
+                        </h5>
+
+
+                        <small>
+
+                            Clase 4
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ===================================================== -->
+        <!-- EXPLICACIÓN DEL PROYECTO -->
+        <!-- ===================================================== -->
+
+        <section class="card p-4 mt-5">
+
+
+            <h2 class="fw-bold">
+
+                <i class="bi bi-lightbulb-fill text-warning"></i>
+
+                ¿Cómo funciona?
+
+            </h2>
+
+
+            <p>
+
+                Este proyecto utiliza un modelo de Inteligencia Artificial
+                entrenado mediante Google Teachable Machine para identificar
+                vasos de cuatro colores diferentes.
+
+            </p>
+
+
+            <div class="row text-center mt-4">
+
+
+                <!-- Paso 1. -->
+                <div class="col-md-3">
+
+                    <i class="bi bi-camera fs-1 text-primary"></i>
+
+
+                    <h6 class="mt-2">
+
+                        1. Capturamos
+
+                    </h6>
+
+
+                    <p class="texto-pequeno">
+
+                        La cámara obtiene una imagen.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Paso 2. -->
+                <div class="col-md-3">
+
+                    <i class="bi bi-cpu fs-1 text-success"></i>
+
+
+                    <h6 class="mt-2">
+
+                        2. Analizamos
+
+                    </h6>
+
+
+                    <p class="texto-pequeno">
+
+                        El modelo analiza la imagen.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Paso 3. -->
+                <div class="col-md-3">
+
+                    <i class="bi bi-bar-chart fs-1 text-warning"></i>
+
+
+                    <h6 class="mt-2">
+
+                        3. Calculamos
+
+                    </h6>
+
+
+                    <p class="texto-pequeno">
+
+                        Se calcula la probabilidad de cada clase.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Paso 4. -->
+                <div class="col-md-3">
+
+                    <i class="bi bi-check-circle fs-1 text-danger"></i>
+
+
+                    <h6 class="mt-2">
+
+                        4. Clasificamos
+
+                    </h6>
+
+
+                    <p class="texto-pequeno">
+
+                        Mostramos la clase con mayor probabilidad.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- ========================================================= -->
+    <!-- PIE DE PÁGINA -->
+    <!-- ========================================================= -->
+
+    <footer class="text-center">
+
+
+        <div class="container">
+
+
+            <p class="mb-1">
+
+                <strong>
+
+                    Tarea 4 - Semana 4 - Proyecto de Inteligencia Artificial
+
+                </strong>
+
+            </p>
+
+
+            <p class="mb-1">
+
+                Realizado por: Lic. Juan Carlos Alanoca Titirico
+
+            </p>
+
+
+            <p class="mb-0 texto-pequeno text-light">
+
+                Modelo desarrollado con Google Teachable Machine
+                y publicado mediante GitHub Pages.
+
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ========================================================= -->
+
+    <script>
+
+
+        // =========================================================
+        // DIRECCIÓN DEL MODELO
+        // =========================================================
+
+        // Dirección donde se encuentra nuestro modelo entrenado.
+        const URL =
+            "https://teachablemachine.withgoogle.com/models/qXY9dYxus/";
+
+
+        // =========================================================
+        // VARIABLES PRINCIPALES
+        // =========================================================
+
+        // Guardamos el modelo de Inteligencia Artificial.
+        let model;
+
+
+        // Guardamos el objeto que controla la cámara.
+        let webcam;
+
+
+        // Guardamos el espacio donde aparecen los resultados.
+        let labelContainer;
+
+
+        // Guardamos la cantidad de clases del modelo.
+        let maxPredictions;
+
+
+        // Indicamos si la cámara está funcionando.
+        let camaraActiva = false;
+
+
+        // =========================================================
+        // INICIAR CÁMARA
+        // =========================================================
+
+        // Esta función inicia el modelo y la cámara.
+        async function init() {
+
+
+            // Verificamos si la cámara ya está funcionando.
+            if (camaraActiva) {
+
+                // Si ya está activa, no hacemos nada.
+                return;
+
+            }
+
+
+            // Creamos las direcciones de los archivos del modelo.
+            const modelURL = URL + "model.json";
+
+            const metadataURL = URL + "metadata.json";
+
+
+            // Mostramos un mensaje mientras cargamos el modelo.
+            document.getElementById("estado").innerHTML =
+                "Cargando el modelo de Inteligencia Artificial...";
+
+
+            // Cargamos el modelo y sus datos.
+            model =
+                await tmImage.load(modelURL, metadataURL);
+
+
+            // Obtenemos la cantidad total de clases.
+            maxPredictions =
+                model.getTotalClasses();
+
+
+            // Creamos una cámara de 300 x 300 píxeles.
+            const flip = true;
+
+
+            // Creamos el objeto de la cámara.
+            webcam =
+                new tmImage.Webcam(300, 300, flip);
+
+
+            // Solicitamos permiso para utilizar la cámara.
+            await webcam.setup();
+
+
+            // Encendemos la cámara.
+            await webcam.play();
+
+
+            // Indicamos que la cámara está activa.
+            camaraActiva = true;
+
+
+            // Limpiamos el espacio de la cámara.
+            document
+                .getElementById("webcam-container")
+                .innerHTML = "";
+
+
+            // Colocamos la cámara dentro de nuestra página.
+            document
+                .getElementById("webcam-container")
+                .appendChild(webcam.canvas);
+
+
+            // Seleccionamos el espacio donde mostraremos los resultados.
+            labelContainer =
+                document.getElementById("label-container");
+
+
+            // Eliminamos resultados anteriores.
+            labelContainer.innerHTML = "";
+
+
+            // Comenzamos el ciclo de predicción.
+            window.requestAnimationFrame(loop);
+
+
+            // Cambiamos el mensaje de estado.
+            document.getElementById("estado").innerHTML =
+                "Cámara activa. Coloca un vaso frente a la cámara.";
+
+
+            // Desactivamos el botón de iniciar.
+            document.getElementById("btn-iniciar").disabled = true;
+
+
+            // Activamos el botón de detener.
+            document.getElementById("btn-detener").disabled = false;
+
+
+            // Cambiamos el texto del botón de iniciar.
+            document.getElementById("btn-iniciar").innerHTML =
+                '<i class="bi bi-camera-video-fill"></i> Cámara activa';
+
+        }
+
+
+        // =========================================================
+        // CICLO DE LA CÁMARA
+        // =========================================================
+
+        // Esta función mantiene funcionando la cámara.
+        async function loop() {
+
+
+            // Verificamos si la cámara sigue activa.
+            if (!camaraActiva) {
+
+                // Si la cámara está detenida, terminamos el ciclo.
+                return;
+
+            }
+
+
+            // Actualizamos la imagen de la cámara.
+            webcam.update();
+
+
+            // Realizamos la predicción.
+            await predict();
+
+
+            // Verificamos nuevamente si la cámara sigue activa.
+            if (camaraActiva) {
+
+                // Volvemos a ejecutar el ciclo.
+                window.requestAnimationFrame(loop);
+
+            }
+
+        }
+
+
+        // =========================================================
+        // DETENER CÁMARA
+        // =========================================================
+
+        // Esta función detiene completamente la cámara.
+        function detenerCamara() {
+
+
+            // Verificamos si existe una cámara.
+            if (webcam) {
+
+                // Detenemos la reproducción de la cámara.
+                webcam.stop();
+
+            }
+
+
+            // Indicamos que la cámara ya no está activa.
+            camaraActiva = false;
+
+
+            // Limpiamos la imagen de la cámara.
+            document.getElementById("webcam-container").innerHTML = `
+
+                <div class="text-muted text-center">
+
+                    <i class="bi bi-camera-video-off fs-1"></i>
+
+                    <br>
+
+                    Cámara detenida.
+
+                    <br>
+
+                    Presiona "Iniciar cámara"
+                    para volver a utilizarla.
+
+                </div>
+
+            `;
+
+
+            // Limpiamos los resultados anteriores.
+            document.getElementById("label-container").innerHTML = "";
+
+
+            // Reiniciamos el resultado principal.
+            document.getElementById("resultado-principal").innerHTML =
+                "Esperando...";
+
+
+            // Cambiamos el mensaje de estado.
+            document.getElementById("estado").innerHTML =
+                "Cámara detenida. Puedes iniciarla nuevamente cuando quieras.";
+
+
+            // Activamos nuevamente el botón de iniciar.
+            document.getElementById("btn-iniciar").disabled = false;
+
+
+            // Desactivamos el botón de detener.
+            document.getElementById("btn-detener").disabled = true;
+
+
+            // Restauramos el texto del botón de iniciar.
+            document.getElementById("btn-iniciar").innerHTML =
+                '<i class="bi bi-camera-fill"></i> Iniciar cámara';
+
+        }
+
+
+        // =========================================================
+        // REALIZAR PREDICCIÓN
+        // =========================================================
+
+        // Esta función analiza la imagen y muestra
+        // la probabilidad correspondiente a cada color.
+        async function predict() {
+
+
+            // Verificamos que la cámara y el modelo existan.
+            if (!webcam || !model || !camaraActiva) {
+
+                // Si alguno no existe, terminamos la función.
+                return;
+
+            }
+
+
+            // Analizamos la imagen capturada por la cámara.
+            const prediction =
+                await model.predict(webcam.canvas);
+
+
+            // Guardamos la mayor probabilidad encontrada.
+            let mayorProbabilidad = 0;
+
+
+            // Guardamos el nombre de la clase ganadora.
+            let claseGanadora = "";
+
+
+            // Creamos una lista vacía para guardar los resultados.
+            let resultadosHTML = "";
+
+
+            // Recorremos todas las clases del modelo.
+            for (
+                let i = 0;
+                i < maxPredictions;
+                i++
+            ) {
+
+
+                // Obtenemos el nombre de la clase.
+                const nombreOriginal =
+                    prediction[i].className;
+
+
+                // Obtenemos la probabilidad.
+                const probabilidad =
+                    prediction[i].probability;
+
+
+                // Convertimos la probabilidad a porcentaje.
+                const porcentaje =
+                    (probabilidad * 100).toFixed(1);
+
+
+                // Convertimos el nombre a minúsculas
+                // para poder identificar el color.
+                const nombreMinuscula =
+                    nombreOriginal.toLowerCase();
+
+
+                // Creamos una variable para el color de la barra.
+                let claseColor = "bg-info";
+
+
+                // Creamos una variable para el nombre que se mostrará.
+                let nombreClase =
+                    nombreOriginal.toUpperCase();
+
+
+                // =================================================
+                // IDENTIFICAMOS EL COLOR ROSADO
+                // =================================================
+
+                if (
+                    nombreMinuscula.includes("rosado") ||
+                    nombreMinuscula.includes("rosa")
+                ) {
+
+                    // Utilizamos el color rojo/rosado.
+                    claseColor = "bg-danger";
+
+
+                    // Mostramos un nombre uniforme.
+                    nombreClase = "VASO ROSADO";
+
+                }
+
+
+                // =================================================
+                // IDENTIFICAMOS EL COLOR VERDE
+                // =================================================
+
+                else if (
+                    nombreMinuscula.includes("verde")
+                ) {
+
+                    // Utilizamos el color verde.
+                    claseColor = "bg-success";
+
+
+                    // Mostramos un nombre uniforme.
+                    nombreClase = "VASO VERDE";
+
+                }
+
+
+                // =================================================
+                // IDENTIFICAMOS EL COLOR AMARILLO
+                // =================================================
+
+                else if (
+                    nombreMinuscula.includes("amarillo")
+                ) {
+
+                    // Utilizamos el color amarillo.
+                    claseColor = "bg-warning";
+
+
+                    // Mostramos un nombre uniforme.
+                    nombreClase = "VASO AMARILLO";
+
+                }
+
+
+                // =================================================
+                // IDENTIFICAMOS EL COLOR AZUL
+                // =================================================
+
+                else if (
+                    nombreMinuscula.includes("azul")
+                ) {
+
+                    // Utilizamos el color azul.
+                    claseColor = "bg-primary";
+
+
+                    // Mostramos un nombre uniforme.
+                    nombreClase = "VASO AZUL";
+
+                }
+
+
+                // =================================================
+                // BUSCAMOS LA CLASE CON MAYOR PROBABILIDAD
+                // =================================================
+
+                // Comprobamos si esta clase tiene
+                // una probabilidad mayor.
+                if (
+                    probabilidad >
+                    mayorProbabilidad
+                ) {
+
+
+                    // Guardamos la mayor probabilidad.
+                    mayorProbabilidad =
+                        probabilidad;
+
+
+                    // Guardamos el nombre de la clase ganadora.
+                    claseGanadora =
+                        nombreClase;
+
+                }
+
+
+                // =================================================
+                // CREAMOS LA BARRA DE PROBABILIDAD
+                // =================================================
+
+                resultadosHTML += `
+
+                    <div class="mb-4">
+
+                        <!-- Nombre de la clase y porcentaje. -->
+                        <div
+                            class="d-flex justify-content-between
+                            align-items-center mb-2"
+                        >
+
+                            <strong>
+
+                                ${nombreClase}
+
+                            </strong>
+
+
+                            <span
+                                class="badge ${claseColor}"
+                            >
+
+                                ${porcentaje}%
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- Barra de progreso. -->
+                        <div
+                            class="progress"
+                            role="progressbar"
+                            aria-label="${nombreClase}"
+                            aria-valuenow="${porcentaje}"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            style="height: 25px;"
+                        >
+
+                            <div
+                                class="progress-bar ${claseColor}"
+                                style="width: ${porcentaje}%"
+                            >
+
+                                ${porcentaje}%
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            // =================================================
+            // MOSTRAMOS TODOS LOS RESULTADOS
+            // =================================================
+
+            // Colocamos las barras dentro del contenedor.
+            document.getElementById(
+                "label-container"
+            ).innerHTML =
+                resultadosHTML;
+
+
+            // Convertimos la probabilidad ganadora
+            // en porcentaje.
+            const confianzaFinal =
+                (mayorProbabilidad * 100).toFixed(1);
+
+
+            // =================================================
+            // MOSTRAMOS EL RESULTADO PRINCIPAL
+            // =================================================
+
+            document.getElementById(
+                "resultado-principal"
+            ).innerHTML = `
+
+                <i class="bi bi-check-circle-fill"></i>
+
+                ${claseGanadora}
+
+                <div class="fs-6 mt-2">
+
+                    Confianza aproximada:
+
+                    <strong>
+                        ${confianzaFinal}%
+                    </strong>
+
+                </div>
+
+            `;
+
+        }
+
+    </script>
+
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT DE BOOTSTRAP -->
+    <!-- ========================================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+
+</body>
+
+</html>
